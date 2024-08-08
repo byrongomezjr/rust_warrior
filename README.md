@@ -3,7 +3,7 @@
 
 An immersive and practical adventure game developed for the sole purpose of aquiring more knowledge in Rust
 
-This game is inspired from WarriorJS,
+This game is inspired by WarriorJS,
 
 https://warriorjs.com/
 
