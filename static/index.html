@@ -1,0 +1,45 @@
+<!-- html/javascript for front end display of game mechanics -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust Game</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Welcome to the Rust Game!</h1>
+    <p>Start your adventure now!</p>
+
+    <!-- TODO: HTML content for game mechanics !! -->
+    <script>
+
+        // JavaScript to interact with server.rs
+
+        async function getGameState() {
+            const response = await fetch('/game');
+            const gameState = await response.json();
+            console.log(gameState);
+        }
+
+        async function updateGameState(newState) {
+            const response = await fetch('/game', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(newState),
+            });
+            const updatedState = await response.json();
+            console.log(updatedState);
+        }
+
+        // example usage:
+
+        getGameState();
+
+        // updateGameState({ player_name: "New Adventurer", current_location: "Forest" });
+        
+    </script>
+</body>
+</html>

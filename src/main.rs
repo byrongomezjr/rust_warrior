@@ -2,6 +2,30 @@ use std::collections::HashMap;
 use std::fs;
 use std::io::{self, Write};
 use serde::{Deserialize, Serialize};
+use serde_json; // import serde_json for JSON serialization - VERY IMPORTANT !!
+
+mod server;
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+
+    // start server asynchronously and wait for it
+
+    let server_handle = tokio::task::spawn_blocking(|| {
+
+        game_loop(); // run game loop in a blocking manner
+    });
+
+    // await server
+
+    if let Err(e) = server::run_server().await {
+        eprintln!("Server error: {}", e);
+    }
+
+    server_handle.await.unwrap();
+
+    Ok(())
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Location {
@@ -70,7 +94,7 @@ impl Player {
     }
 }
 
-fn main() {
+fn game_loop() {
     let locations = setup_locations();
     let mut player = setup_player();
 
@@ -95,7 +119,10 @@ fn main() {
         // process commands
 
         match input.as_str() {
-            "quit" => break,
+            "quit" | "exit" => {
+                println!("Exiting the game. Thank you for playing!");
+                break; // exit loop to end the game !!
+            }
             "save" => {
                 if let Err(err) = player.save("save_game.json") {
                     println!("Failed to save game: {}", err);
@@ -125,7 +152,7 @@ fn main() {
         }
     }
 
-    println!("Thank you for playing!");
+    println!("Game session ended.");
 }
 
 fn setup_locations() -> HashMap<String, Location> {
@@ -145,6 +172,7 @@ fn setup_locations() -> HashMap<String, Location> {
 }
 
 fn setup_player() -> Player {
+    
     // prompts player for their name if desired
 
     Player::new("Adventurer", "Home")
