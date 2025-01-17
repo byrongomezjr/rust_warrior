@@ -2,12 +2,22 @@
 name = "rust_warrior"
 version = "0.1.0"
 edition = "2021"
+authors = ["Byron Gomez Jr"]
+description = """
+An immersive and practical adventure game developed for the sole purpose of acquiring more knowledge in Rust.
+This game is inspired by WarriorJS (https://warriorjs.com/).
+Game is still in development 🕹️
+"""
+repository = "https://github.com/byrongomezjr/rust_warrior"
+readme = "README.md"
+license = "MIT"
+keywords = ["game", "adventure", "learning", "rust", "warrior"]
+categories = ["games", "command-line-utilities", "gui"]
 
 [dependencies]
-actix-web = "4.0"
-actix-files = "0.6"
+eframe = "0.26.0"
+egui = "0.26.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tokio = { version = "1.0", features = ["full"] }
-eframe = "0.30.0"
-egui = "0.30.0"
+actix-web = "4.4.0"
+actix-files = "0.6.2"
