@@ -2,44 +2,212 @@
 
 
 <!DOCTYPE html>
-<html lang="en">
+<html>
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rust Game</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Rust Warrior - Web Interface</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 250px 1fr 250px;
+            gap: 20px;
+        }
+
+        .panel {
+            background-color: #2d2d2d;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .game-log {
+            height: 400px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #1a1a1a;
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 8px;
+            background-color: #1a1a1a;
+            border: 1px solid #3d3d3d;
+            color: #ffffff;
+            font-family: 'Courier New', monospace;
+        }
+
+        button {
+            padding: 8px 16px;
+            background-color: #0066cc;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0052a3;
+        }
+
+        .heading {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #4d9fff;
+        }
+
+        .quest {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #1a1a1a;
+            border-radius: 4px;
+        }
+
+        .small {
+            font-size: 0.9em;
+            color: #888;
+        }
+
+        .code-editor {
+            width: 100%;
+            min-height: 200px;
+            background-color: #1a1a1a;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #3d3d3d;
+            border-radius: 4px;
+        }
+
+        .challenge-description {
+            white-space: pre-wrap;
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
+
 <body>
-    <h1>Welcome to the Rust Game!</h1>
-    <p>Start your adventure now!</p>
+    <div class="container">
+        <!-- Left Panel -->
+        <div class="panel">
+            <div class="heading">Warrior Stats</div>
+            <div id="stats"></div>
 
-    <!-- TODO: HTML content for game mechanics !! -->
+            <div class="heading">Inventory</div>
+            <div id="inventory"></div>
+
+            <div class="heading">Quests</div>
+            <div id="quests"></div>
+        </div>
+
+        <!-- Center Panel -->
+        <div class="panel">
+            <h1 style="text-align: center;">Rust Warrior</h1>
+            <div class="game-log" id="gameLog"></div>
+            <div class="input-area">
+                <input type="text" id="commandInput" placeholder="Enter command...">
+                <button onclick="sendCommand()">Enter</button>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="panel">
+            <div class="heading">World Map</div>
+            <div id="map"></div>
+
+            <div class="heading">Code Challenge</div>
+            <div id="codeChallenge"></div>
+        </div>
+    </div>
+
     <script>
+        // Update game state from server
+        async function updateGameState() {
+            const response = await fetch('/game-state');
+            const data = await response.json();
 
-        // JavaScript to interact with server.rs
+            // Update game log
+            document.getElementById('gameLog').innerHTML = data.game_log.join('<br>');
 
-        async function getGameState() {
-            const response = await fetch('/game');
-            const gameState = await response.json();
-            console.log(gameState);
+            // Update stats
+            if (data.player) {
+                document.getElementById('stats').innerHTML = `
+                    Health: ${data.player.health}/100<br>
+                    Level: ${data.player.completed_quests.length}<br>
+                    Location: ${data.player.current_location}
+                `;
+            }
+
+            // Update quests
+            if (data.quests) {
+                const questsHtml = data.quests.map(quest => `
+                    <div class="quest">
+                        <div>${quest.completed ? '✓' : '◆'} ${quest.description}</div>
+                        <div class="small">🦀 Rust: ${quest.rust_concept}</div>
+                        <div class="small">${quest.completed ? '✨ Completed!' : '⏳ In Progress'}</div>
+                    </div>
+                `).join('<br>');
+                document.getElementById('quests').innerHTML = questsHtml || 'No quests available';
+            }
+
+            // Update code challenge
+            if (data.code_challenge) {
+                document.getElementById('codeChallenge').innerHTML = `
+                    <div class="challenge-description">${data.code_challenge.description}</div>
+                    <textarea class="code-editor" rows="10">${data.code_challenge.initial_code}</textarea>
+                    <button onclick="submitSolution()">Submit Solution</button>
+                `;
+            } else {
+                document.getElementById('codeChallenge').innerHTML = 'No code challenge available';
+            }
         }
 
-        async function updateGameState(newState) {
-            const response = await fetch('/game', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(newState),
-            });
-            const updatedState = await response.json();
-            console.log(updatedState);
+        // Send command to server
+        async function sendCommand() {
+            const input = document.getElementById('commandInput');
+            const command = input.value;
+
+            if (command) {
+                await fetch('/game-state', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(command),
+                });
+
+                input.value = '';
+                updateGameState();
+            }
         }
 
-        // example usage:
+        // Handle Enter key
+        document.getElementById('commandInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendCommand();
+            }
+        });
 
-        getGameState();
+        // Initial state update
+        updateGameState();
 
-        // updateGameState({ player_name: "New Adventurer", current_location: "Forest" });
-        
+        // Update game state periodically
+        setInterval(updateGameState, 1000);
     </script>
 </body>
+
 </html>

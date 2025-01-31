@@ -1,59 +1,53 @@
 use actix_files::NamedFile;
-use actix_web::{web, App, HttpServer, Responder, HttpResponse, Result};
-use std::path::PathBuf;
-use serde::{Deserialize, Serialize};
+use actix_web::{get, post, web, App, HttpServer, Result, Responder};
 use std::sync::{Arc, Mutex};
+use serde_json::json;
+use crate::GameState;
 
-// define game state structure
-
-#[derive(Debug, Serialize, Deserialize)]
-struct GameState {
-    player_name: String,
-    current_location: String,
-
-    // TODO: add more game state fields as needed !! - PENDING
-}
-
-// handler to serve index.html file
-
+// Serve the static HTML file
+#[get("/")]
 async fn index() -> Result<NamedFile> {
-    let path: PathBuf = "static/index.html".parse().unwrap();
-    Ok(NamedFile::open(path)?)
+    Ok(NamedFile::open("static/index.html")?)
 }
 
-// handler to get current game state
-
+// Get current game state
+#[get("/game-state")]
 async fn get_game_state(data: web::Data<Arc<Mutex<GameState>>>) -> impl Responder {
     let game_state = data.lock().unwrap();
-    HttpResponse::Ok().json(&*game_state)
+    web::Json(json!({
+        "player": &game_state.player,
+        "current_location": &game_state.current_location,
+        "game_log": &game_state.game_log,
+        "quests": game_state.current_location.as_ref().map(|loc| &loc.quests),
+        "code_challenge": game_state.current_location.as_ref()
+            .and_then(|loc| loc.quests.first())
+            .and_then(|quest| quest.code_challenge.as_ref())
+    }))
 }
 
-// handler to update game state (example: move player)
-
+// Update game state
+#[post("/game-state")]
 async fn update_game_state(
     data: web::Data<Arc<Mutex<GameState>>>,
-    new_state: web::Json<GameState>,
+    input: web::Json<String>
 ) -> impl Responder {
     let mut game_state = data.lock().unwrap();
-    *game_state = new_state.into_inner();
-    HttpResponse::Ok().json(&*game_state)
+    game_state.current_input = input.into_inner();
+    game_state.handle_input();
+    web::Json(json!({"status": "success"}))
 }
 
+// Main server function
 pub async fn run_server() -> std::io::Result<()> {
-
-    // initialize shared game state
+    let game_state = web::Data::new(Arc::new(Mutex::new(GameState::new())));
     
-    let game_state = Arc::new(Mutex::new(GameState {
-        player_name: "Adventurer".to_string(),
-        current_location: "Home".to_string(),
-    }));
-
+    println!("Starting server at http://localhost:8080");
     HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::new(game_state.clone()))
-            .route("/", web::get().to(index))
-            .route("/game", web::get().to(get_game_state))
-            .route("/game", web::post().to(update_game_state))
+            .app_data(game_state.clone())
+            .service(index)
+            .service(get_game_state)
+            .service(update_game_state)
     })
     .bind("127.0.0.1:8080")?
     .run()
